@@ -110,7 +110,7 @@ async function render() {
           <button class="filter-btn ${hasActiveFilters() ? "" : "active"}" type="button" data-action="clearFilters">全部</button>
           <button class="filter-btn ${state.tagFilterOpen || state.tagFilters.size ? "active" : ""}" type="button" data-action="toggleTagFilter">分类</button>
           <button class="filter-btn ${state.moodFilterOpen || state.moodFilters.size ? "active" : ""}" type="button" data-action="toggleMoodFilter">情绪</button>
-          <button class="filter-btn" type="button" data-action="showExport">导出</button>
+          <button class="filter-btn export-top-btn" type="button" data-action="showExport">导出</button>
           <button class="icon-btn search-btn ${state.searchOpen ? "active" : ""}" data-action="toggleSearch" title="搜索" aria-label="搜索">⌕</button>
           <button class="filter-btn signout-btn" data-action="signout" title="退出登录">退出</button>
         </div>

@@ -779,75 +779,232 @@ textarea::placeholder {
 }
 
 @media (max-width: 560px) {
+  body {
+    background: oklch(97.8% 0.007 96);
+  }
+
   .shell {
-    padding-inline: 14px;
+    width: 100%;
+    padding: 16px 18px 112px;
   }
 
   .app-header {
-    align-items: flex-start;
+    align-items: start;
     display: grid;
-    gap: 12px;
+    gap: 14px;
+    padding: 10px 0 14px;
+    background: color-mix(in oklch, var(--bg) 90%, transparent);
+  }
+
+  .date-line {
+    font-size: 14px;
+    letter-spacing: 0.01em;
   }
 
   h1 {
-    font-size: 26px;
+    font-size: 24px;
   }
 
   .header-actions {
     width: 100%;
-    flex-wrap: wrap;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) 40px;
+    gap: 7px;
     overflow: visible;
   }
 
-  .filter-btn,
+  .filter-btn {
+    min-height: 38px;
+    min-width: 0;
+    padding: 7px 10px;
+    border-radius: 12px;
+    font-size: 14px;
+    background: color-mix(in oklch, var(--paper) 74%, transparent);
+  }
+
+  .filter-btn.active {
+    color: var(--green-strong);
+    background: color-mix(in oklch, var(--green-soft) 78%, var(--paper));
+    border-color: color-mix(in oklch, var(--green) 16%, transparent);
+  }
+
   .search-btn {
-    flex: 0 0 auto;
+    order: 5;
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+    font-size: 22px;
+    border: 1px solid var(--line);
+    background: color-mix(in oklch, var(--paper) 74%, transparent);
+  }
+
+  .export-top-btn {
+    display: none;
   }
 
   .signout-btn {
+    order: 4;
+    grid-column: auto;
     margin-left: 0;
   }
 
-  .timeline-list::before {
-    left: 49px;
+  .filter-panel {
+    margin-top: 0;
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .main {
+    padding-top: 4px;
+  }
+
+  .timeline-list {
+    gap: 18px;
+  }
+
+  .timeline-list::before,
+  .timeline-line {
+    display: none;
   }
 
   .timeline-item {
-    grid-template-columns: 38px 22px minmax(0, 1fr);
+    grid-template-columns: 1fr;
     gap: 8px;
   }
 
+  .date-block {
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+    padding: 0 2px;
+    text-align: left;
+  }
+
   .date-block strong {
-    font-size: 23px;
+    font-size: 18px;
+    font-weight: 420;
+  }
+
+  .date-block span {
+    display: inline;
+    margin: 0;
+    font-size: 12px;
   }
 
   .entry {
-    padding: 15px;
+    padding: 14px;
+    border-radius: 14px;
+    background: color-mix(in oklch, var(--paper) 82%, transparent);
+    box-shadow: 0 10px 28px rgba(67, 69, 61, 0.045);
   }
 
   .entry-head {
     display: grid;
-    gap: 8px;
+    gap: 10px;
+  }
+
+  .mood-line {
+    gap: 7px;
+    font-size: 12px;
+  }
+
+  .mood-face {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+  }
+
+  .entry h3 {
+    margin-top: 8px;
+    font-size: 20px;
+    line-height: 1.3;
+  }
+
+  .entry p {
+    margin-top: 14px;
+    font-size: 15px;
+    line-height: 1.75;
   }
 
   .entry-tools {
     justify-content: flex-start;
+    gap: 12px;
+    font-size: 12px;
   }
 
-  .split,
-  .comment-form {
-    grid-template-columns: 1fr;
+  .plain-btn {
+    min-height: 28px;
+    padding: 3px 0;
+  }
+
+  .tag-line {
+    margin-top: 14px;
+    gap: 10px;
+  }
+
+  .comments {
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+
+  .legend {
+    font-size: 11px;
   }
 
   .comment {
-    grid-template-columns: 1fr;
-    gap: 4px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid color-mix(in oklch, var(--line) 62%, transparent);
+  }
+
+  .comment:last-of-type {
+    border-bottom: 0;
   }
 
   .comment-delete {
-    justify-self: start;
-    margin-top: 0;
+    justify-self: end;
+    margin-top: -2px;
+  }
+
+  .comment-form {
+    grid-template-columns: minmax(0, 1fr) 42px;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+  }
+
+  .comment-form input {
+    min-height: 42px;
+    padding: 10px 13px;
+    border-radius: 14px;
+    font-size: 14px;
+  }
+
+  .comment-form .ghost {
+    width: 42px;
+    min-width: 42px;
+    min-height: 42px;
+    padding: 0;
+    border-radius: 14px;
+    font-size: 20px;
+    line-height: 1;
+  }
+
+  .split {
+    grid-template-columns: 1fr;
+  }
+
+  .bottom-nav {
+    padding: 8px 30px max(14px, env(safe-area-inset-bottom));
+  }
+
+  .bottom-nav .fab,
+  .floating-new {
+    width: 56px;
+    height: 56px;
+    font-size: 31px;
   }
 
   .editor-sheet {
@@ -857,6 +1014,6 @@ textarea::placeholder {
   .sheet-panel {
     max-height: 92vh;
     padding: 16px;
-    border-radius: 20px 20px 14px 14px;
+    border-radius: 18px 18px 12px 12px;
   }
 }
