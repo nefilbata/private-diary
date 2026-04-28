@@ -10,6 +10,8 @@ const MOODS = [
   { name: "难过", group: "低落" },
 ];
 
+const TAGS = ["独处", "工作", "关系", "睡眠", "天气", "恢复", "学习", "生活"];
+
 const app = document.querySelector("#app");
 const state = {
   client: null,
@@ -17,10 +19,16 @@ const state = {
   entries: [],
   view: "timeline",
   editingId: null,
-  selectedMood: MOODS[0],
+  editorOpen: false,
   selectedExportIds: new Set(),
   authMode: "signin",
   cryptoKey: null,
+  searchOpen: false,
+  moodFilterOpen: false,
+  tagFilterOpen: false,
+  searchQuery: "",
+  moodFilters: new Set(),
+  tagFilters: new Set(),
 };
 
 const configured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
@@ -77,55 +85,51 @@ async function saveEntriesLocal() {
   write(userKey("entries"), state.entries);
 }
 
-function render() {
+async function render() {
   if (!state.user) {
     renderAuth();
     return;
   }
 
   if (configured && !state.cryptoKey) {
+    if (await unlockWithRememberedPrivacyPassword()) {
+      render();
+      return;
+    }
     renderPrivacyUnlock();
     return;
   }
 
-  const title = state.view === "export" ? "选择导出" : "小日常记";
   app.innerHTML = `
     <div class="shell">
-      <header class="sidebar">
-        <div class="brand">
-          <div class="mark">日</div>
-          <div>
-            <h1>小日常记</h1>
-            <p>${state.user.email || state.user.name}</p>
-          </div>
+      <header class="app-header">
+        <div>
+          <p class="date-line">${formatTodayHeader()}</p>
         </div>
         <div class="header-actions">
-          <button class="icon-btn search-btn" title="搜索">⌕</button>
-          <button class="primary" data-action="new" title="写日记">✎ 写日记</button>
+          <button class="filter-btn ${hasActiveFilters() ? "" : "active"}" type="button" data-action="clearFilters">全部</button>
+          <button class="filter-btn ${state.tagFilterOpen || state.tagFilters.size ? "active" : ""}" type="button" data-action="toggleTagFilter">分类</button>
+          <button class="filter-btn ${state.moodFilterOpen || state.moodFilters.size ? "active" : ""}" type="button" data-action="toggleMoodFilter">情绪</button>
+          <button class="filter-btn" type="button" data-action="showExport">导出</button>
+          <button class="icon-btn search-btn ${state.searchOpen ? "active" : ""}" data-action="toggleSearch" title="搜索" aria-label="搜索">⌕</button>
+          <button class="filter-btn signout-btn" data-action="signout" title="退出登录">退出</button>
         </div>
-        <nav class="nav">
-          <button class="${state.view === "timeline" ? "active" : ""}" data-view="timeline" title="首页">⌂<span>首页</span></button>
-          <button class="fab" data-action="new" title="写日记">＋<span>写日记</span></button>
-          <button class="${state.view === "export" ? "active" : ""}" data-view="export" title="导出">⇩<span>导出</span></button>
-        </nav>
-        <button class="ghost signout-btn" data-action="signout" title="退出登录">退出</button>
       </header>
+      ${renderFilterPanel()}
       <section class="main">
-        <div class="topbar">
-          <div>
-            <h2>${title}</h2>
-            <p class="hint">把小小的情绪，安静地放在今天。</p>
-          </div>
-          <div class="toolbar">
-            <button class="primary" data-action="new" title="新建日记">＋ 新建</button>
-          </div>
-        </div>
         ${
           state.view === "export"
             ? renderExport()
-            : `<div class="grid">${renderEditor()}${renderTimeline()}</div>`
+            : renderTimeline()
         }
       </section>
+      <nav class="bottom-nav">
+        <button class="${state.view === "timeline" ? "active" : ""}" data-view="timeline" title="首页" aria-label="首页">⌂<span>首页</span></button>
+        <button class="fab" data-action="new" title="写日记" aria-label="写日记">＋</button>
+        <button class="${state.view === "export" ? "active" : ""}" data-view="export" title="导出" aria-label="导出">⇩<span>导出</span></button>
+      </nav>
+      <button class="floating-new" data-action="new" title="写日记" aria-label="写日记">＋</button>
+      ${state.editorOpen ? renderEditor() : ""}
     </div>
   `;
   bindAppEvents();
@@ -142,6 +146,10 @@ function renderPrivacyUnlock() {
           <label class="field">
             <span>隐私密码</span>
             <input name="privacyPassword" type="password" required minlength="8" placeholder="建议至少 8 位" />
+          </label>
+          <label class="check-field">
+            <input name="rememberPrivacy" type="checkbox" />
+            <span>在这台设备记住，下次自动进入</span>
           </label>
           <button class="primary" type="submit">进入日记</button>
           <button class="ghost" type="button" data-action="signout">换账号登录</button>
@@ -188,9 +196,49 @@ function renderAuth() {
   document.querySelector("#authForm").addEventListener("submit", submitAuth);
 }
 
+function renderFilterPanel() {
+  if (!state.searchOpen && !state.moodFilterOpen && !state.tagFilterOpen) {
+    return "";
+  }
+
+  return `
+    <section class="filter-panel">
+      ${
+        state.searchOpen
+          ? `<label class="search-field">
+              <span>搜索</span>
+              <input id="searchInput" value="${escapeHtml(state.searchQuery)}" placeholder="搜索标题、内容、标签或情绪" />
+            </label>`
+          : ""
+      }
+      ${
+        state.moodFilterOpen
+          ? `<div class="filter-group">
+              <span>按情绪筛选</span>
+              <div class="mood-row">
+                ${MOODS.map((mood) => `<button type="button" class="chip ${state.moodFilters.has(mood.name) ? "active" : ""}" data-filter-mood="${mood.name}">${mood.name}</button>`).join("")}
+              </div>
+            </div>`
+          : ""
+      }
+      ${
+        state.tagFilterOpen
+          ? `<div class="filter-group">
+              <span>按分类筛选</span>
+              <div class="tag-row">
+                ${availableTags().map((tag) => `<button type="button" class="chip ${state.tagFilters.has(tag) ? "active" : ""}" data-filter-tag="${tag}">${tag}</button>`).join("")}
+              </div>
+            </div>`
+          : ""
+      }
+    </section>
+  `;
+}
+
 async function submitPrivacyPassword(event) {
   event.preventDefault();
-  const password = new FormData(event.target).get("privacyPassword");
+  const formData = new FormData(event.target);
+  const password = formData.get("privacyPassword");
   state.cryptoKey = await derivePrivacyKey(password);
   try {
     await loadEntries();
@@ -198,6 +246,9 @@ async function submitPrivacyPassword(event) {
     state.cryptoKey = null;
     alert("隐私密码不对，无法解密已有日记。");
     return;
+  }
+  if (formData.get("rememberPrivacy")) {
+    localStorage.setItem(privacyPasswordKey(), password);
   }
   render();
 }
@@ -207,15 +258,24 @@ function renderEditor() {
   const now = new Date();
   const date = entry?.entry_date ?? now.toISOString().slice(0, 10);
   const time = entry?.entry_time ?? now.toTimeString().slice(0, 5);
-  const tags = (entry?.tags ?? []).join(", ");
-  state.selectedMood = entry
-    ? { name: entry.mood, group: entry.mood_category }
-    : state.selectedMood;
+  const selectedMoods = splitList(entry?.mood);
+  if (!selectedMoods.length) selectedMoods.push("平静");
+  const selectedTags = entry?.tags ?? [];
+  const customMoods = selectedMoods
+    .filter((name) => !MOODS.some((mood) => mood.name === name))
+    .join(", ");
+  const customTags = selectedTags
+    .filter((tag) => !TAGS.includes(tag))
+    .join(", ");
 
   return `
-    <section class="panel">
-      <h3>${entry ? "编辑日记" : "写日记"}</h3>
-      <form class="form" id="entryForm">
+    <section class="editor-sheet" role="dialog" aria-modal="true">
+      <div class="sheet-panel">
+        <div class="sheet-head">
+          <h3>${entry ? "编辑日记" : "写点什么"}</h3>
+          <button class="icon-btn" type="button" data-action="cancelEdit" title="关闭" aria-label="关闭">×</button>
+        </div>
+        <form class="form" id="entryForm">
         <label class="field">
           <span>标题</span>
           <input name="title" value="${escapeHtml(entry?.title ?? "")}" placeholder="今天想记住什么" />
@@ -235,14 +295,17 @@ function renderEditor() {
           <div class="mood-row">
             ${MOODS.map(
               (mood) =>
-                `<button type="button" class="chip ${state.selectedMood.name === mood.name ? "active" : ""}" data-mood="${mood.name}" data-group="${mood.group}">${mood.name}</button>`,
+                `<button type="button" class="chip ${selectedMoods.includes(mood.name) ? "active" : ""}" data-mood="${mood.name}" data-group="${mood.group}">${mood.name}</button>`,
             ).join("")}
           </div>
-          <input name="custom_mood" placeholder="也可以输入自定义心情" value="" />
+          <input name="custom_mood" placeholder="也可以输入多个自定义心情，用逗号分隔" value="${escapeHtml(customMoods)}" />
         </label>
         <label class="field">
           <span>标签分类</span>
-          <input name="tags" value="${escapeHtml(tags)}" placeholder="工作, 关系, 睡眠，用逗号分隔" />
+          <div class="tag-row">
+            ${TAGS.map((tag) => `<button type="button" class="chip ${selectedTags.includes(tag) ? "active" : ""}" data-tag="${tag}">${tag}</button>`).join("")}
+          </div>
+          <input name="tags" value="${escapeHtml(customTags)}" placeholder="也可以输入多个自定义标签，用逗号分隔" />
         </label>
         <label class="field">
           <span>内容</span>
@@ -255,55 +318,67 @@ function renderEditor() {
         </label>
         <div class="toolbar">
           <button class="primary" type="submit">${entry ? "保存修改" : "保存日记"}</button>
-          ${entry ? `<button class="ghost" type="button" data-action="cancelEdit">取消</button>` : ""}
+          <button class="ghost" type="button" data-action="cancelEdit">取消</button>
         </div>
       </form>
+      </div>
     </section>
   `;
 }
 
 function renderTimeline() {
-  if (!state.entries.length) {
-    return `<section class="empty">还没有日记。先写下今天的第一条情绪记录。</section>`;
+  const entries = filteredEntries();
+  if (!entries.length) {
+    return `
+      <section class="empty">
+        <h2>${state.entries.length ? "没有找到符合条件的日记" : "还没有日记"}</h2>
+        <p>${state.entries.length ? "试试清空筛选，或者换一个关键词。" : "先写下今天的第一条情绪记录。"}</p>
+        <button class="primary" data-action="${state.entries.length ? "clearFilters" : "new"}">${state.entries.length ? "清空筛选" : "写第一条"}</button>
+      </section>
+    `;
   }
 
-  let lastDay = "";
-  const items = sortedEntries()
+  const items = entries
     .map((entry) => {
-      const dayLabel =
-        entry.entry_date === lastDay
-          ? ""
-          : `<div class="day">${formatDay(entry.entry_date)}</div>`;
-      lastDay = entry.entry_date;
+      const mood = moodStyle(entry.mood);
       return `
-        ${dayLabel}
-        <article class="entry">
-          <div class="entry-head">
-            <div>
-              <div class="entry-title">
-                <input type="checkbox" data-select="${entry.id}" ${state.selectedExportIds.has(entry.id) ? "checked" : ""} title="选择导出" />
+        <article class="timeline-item">
+          <div class="date-block">
+            <strong>${formatDayNumber(entry.entry_date)}</strong>
+            <span>${formatDayMeta(entry.entry_date)}</span>
+          </div>
+          <div class="timeline-line">
+            <span class="node ${mood.className}"></span>
+          </div>
+          <div class="entry">
+            <div class="entry-head">
+              <div>
+                <div class="mood-line">
+                  <span class="mood-face ${mood.className}">${mood.face}</span>
+                  <span>${escapeHtml(entry.mood)}</span>
+                </div>
                 <h3>${escapeHtml(entry.title || "未命名记录")}</h3>
               </div>
-              <div class="meta">
+              <div class="entry-tools">
                 <span>${entry.entry_time}</span>
-                <span>${escapeHtml(entry.mood)} / ${escapeHtml(entry.mood_category)}</span>
-                ${(entry.tags ?? []).map((tag) => `<span>#${escapeHtml(tag)}</span>`).join("")}
+                <button class="plain-btn" data-edit="${entry.id}" title="编辑">编辑</button>
+                <button class="plain-btn" data-delete="${entry.id}" title="删除">删除</button>
               </div>
             </div>
-            <div class="toolbar">
-              <button class="icon-btn" data-edit="${entry.id}" title="编辑">✎</button>
-              <button class="icon-btn" data-delete="${entry.id}" title="删除">×</button>
+            <p>${escapeHtml(entry.content)}</p>
+            ${entry.image_url ? `<img src="${entry.image_url}" alt="日记图片" />` : ""}
+            <div class="tag-line">
+              <input type="checkbox" data-select="${entry.id}" ${state.selectedExportIds.has(entry.id) ? "checked" : ""} title="选择导出" />
+              ${(entry.tags ?? []).map((tag) => `<span>#${escapeHtml(tag)}</span>`).join("")}
             </div>
+            ${renderComments(entry)}
           </div>
-          <p>${escapeHtml(entry.content)}</p>
-          ${entry.image_url ? `<img src="${entry.image_url}" alt="日记图片" />` : ""}
-          ${renderComments(entry)}
         </article>
       `;
     })
     .join("");
 
-  return `<section class="entry-list">${items}</section>`;
+  return `<section class="timeline-list">${items}</section>`;
 }
 
 function renderComments(entry) {
@@ -329,15 +404,35 @@ function renderExport() {
   const selected = sortedEntries().filter((entry) =>
     state.selectedExportIds.has(entry.id),
   );
+  if (!state.entries.length) {
+    return `
+      <section class="empty">
+        <h2>还没有可导出的日记</h2>
+        <p>写下第一条记录后，就可以选择导出 JSON 或 CSV。</p>
+        <button class="primary" data-action="new">写第一条</button>
+      </section>
+    `;
+  }
   return `
     <section class="panel">
       <h3>选择要导出的日记</h3>
-      <p class="hint">可以在时间轴勾选记录，也可以在这里一键选择。</p>
+      <p class="hint">勾选需要导出的记录，再选择 JSON 或 CSV。</p>
       <div class="toolbar">
         <button class="ghost" data-action="selectAll">全选</button>
         <button class="ghost" data-action="clearSelection">清空</button>
         <button class="primary" data-action="exportJson">导出 JSON</button>
         <button class="ghost" data-action="exportCsv">导出 CSV</button>
+      </div>
+      <div class="export-items">
+        ${sortedEntries().map((entry) => `
+          <label class="export-entry">
+            <input type="checkbox" data-select="${entry.id}" ${state.selectedExportIds.has(entry.id) ? "checked" : ""} />
+            <span>
+              <strong>${escapeHtml(entry.title || "未命名记录")}</strong>
+              <em>${entry.entry_date} ${entry.entry_time} · ${escapeHtml(entry.mood)}</em>
+            </span>
+          </label>
+        `).join("")}
       </div>
       <div class="export-list">
         ${selected.length ? selected.map((entry) => `<span class="chip active">${escapeHtml(entry.title || entry.entry_date)}</span>`).join("") : `<span class="chip">当前没有选中记录</span>`}
@@ -358,13 +453,44 @@ function bindAppEvents() {
     button.addEventListener("click", async () => {
       const action = button.dataset.action;
       if (action === "signout") return signOut();
+      if (action === "clearFilters") {
+        state.searchQuery = "";
+        state.moodFilters.clear();
+        state.tagFilters.clear();
+        state.searchOpen = false;
+        state.moodFilterOpen = false;
+        state.tagFilterOpen = false;
+        state.view = "timeline";
+        render();
+      }
+      if (action === "toggleSearch") {
+        state.searchOpen = !state.searchOpen;
+        state.view = "timeline";
+        render();
+      }
+      if (action === "toggleMoodFilter") {
+        state.moodFilterOpen = !state.moodFilterOpen;
+        state.view = "timeline";
+        render();
+      }
+      if (action === "toggleTagFilter") {
+        state.tagFilterOpen = !state.tagFilterOpen;
+        state.view = "timeline";
+        render();
+      }
+      if (action === "showExport") {
+        state.view = "export";
+        render();
+      }
       if (action === "new") {
         state.editingId = null;
+        state.editorOpen = true;
         state.view = "timeline";
         render();
       }
       if (action === "cancelEdit") {
         state.editingId = null;
+        state.editorOpen = false;
         render();
       }
       if (action === "selectAll") {
@@ -382,18 +508,41 @@ function bindAppEvents() {
 
   document.querySelectorAll("[data-mood]").forEach((button) => {
     button.addEventListener("click", () => {
-      state.selectedMood = {
-        name: button.dataset.mood,
-        group: button.dataset.group,
-      };
+      button.classList.toggle("active");
+    });
+  });
+  document.querySelectorAll("[data-tag]").forEach((button) => {
+    button.addEventListener("click", () => {
+      button.classList.toggle("active");
+    });
+  });
+  document.querySelectorAll("[data-filter-mood]").forEach((button) => {
+    button.addEventListener("click", () => {
+      toggleSetValue(state.moodFilters, button.dataset.filterMood);
       render();
     });
   });
+  document.querySelectorAll("[data-filter-tag]").forEach((button) => {
+    button.addEventListener("click", () => {
+      toggleSetValue(state.tagFilters, button.dataset.filterTag);
+      render();
+    });
+  });
+  document.querySelector("#searchInput")?.addEventListener("input", (event) => {
+    state.searchQuery = event.target.value;
+    render();
+  });
+  const searchInput = document.querySelector("#searchInput");
+  if (searchInput) {
+    searchInput.focus();
+    searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+  }
 
   document.querySelector("#entryForm")?.addEventListener("submit", submitEntry);
   document.querySelectorAll("[data-edit]").forEach((button) => {
     button.addEventListener("click", () => {
       state.editingId = button.dataset.edit;
+      state.editorOpen = true;
       render();
     });
   });
@@ -404,6 +553,7 @@ function bindAppEvents() {
     input.addEventListener("change", () => {
       if (input.checked) state.selectedExportIds.add(input.dataset.select);
       else state.selectedExportIds.delete(input.dataset.select);
+      if (state.view === "export") render();
     });
   });
   document.querySelectorAll("[data-comment-form]").forEach((form) => {
@@ -428,7 +578,7 @@ async function submitAuth(event) {
     state.user = { id: data.email.toLowerCase(), email: data.email };
     write("diary_demo_user", state.user);
   }
-  await loadEntries();
+  if (!configured) await loadEntries();
   render();
 }
 
@@ -436,22 +586,33 @@ async function submitEntry(event) {
   event.preventDefault();
   const form = event.target;
   const data = Object.fromEntries(new FormData(form));
-  const customMood = data.custom_mood?.trim();
   const imageFile = form.image.files[0];
   const existing = state.entries.find((entry) => entry.id === state.editingId);
   const image_url = imageFile
     ? await fileToDataUrl(imageFile)
     : existing?.image_url ?? "";
+  const selectedMoodButtons = [...form.querySelectorAll("[data-mood].active")];
+  const customMoods = splitList(data.custom_mood);
+  const moods = uniqueList([
+    ...selectedMoodButtons.map((button) => button.dataset.mood),
+    ...customMoods,
+  ]);
+  const moodGroups = uniqueList([
+    ...selectedMoodButtons.map((button) => button.dataset.group),
+    ...(customMoods.length ? ["自定义"] : []),
+  ]);
+  const selectedTagButtons = [...form.querySelectorAll("[data-tag].active")];
+  const tags = uniqueList([
+    ...selectedTagButtons.map((button) => button.dataset.tag),
+    ...splitList(data.tags),
+  ]);
 
   const payload = {
     title: data.title.trim(),
     content: data.content.trim(),
-    mood: customMood || state.selectedMood.name,
-    mood_category: customMood ? "自定义" : state.selectedMood.group,
-    tags: data.tags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean),
+    mood: moods.length ? moods.join("、") : "平静",
+    mood_category: moodGroups.length ? moodGroups.join("、") : "稳定",
+    tags,
     entry_date: data.entry_date,
     entry_time: data.entry_time,
     image_url,
@@ -485,6 +646,7 @@ async function submitEntry(event) {
   }
 
   state.editingId = null;
+  state.editorOpen = false;
   render();
 }
 
@@ -538,6 +700,24 @@ async function signOut() {
   state.cryptoKey = null;
   state.selectedExportIds.clear();
   render();
+}
+
+async function unlockWithRememberedPrivacyPassword() {
+  const password = localStorage.getItem(privacyPasswordKey());
+  if (!password) return false;
+  state.cryptoKey = await derivePrivacyKey(password);
+  try {
+    await loadEntries();
+    return true;
+  } catch {
+    state.cryptoKey = null;
+    localStorage.removeItem(privacyPasswordKey());
+    return false;
+  }
+}
+
+function privacyPasswordKey() {
+  return `diary_privacy_password_${state.user?.id || state.user?.email || "guest"}`;
 }
 
 async function encryptEntryPayload(payload) {
@@ -647,6 +827,63 @@ function fromBase64(value) {
   return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
 }
 
+function splitList(value) {
+  if (!value) return [];
+  return String(value)
+    .split(/[,，、]/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function uniqueList(items) {
+  return [...new Set(items.filter(Boolean))];
+}
+
+function hasActiveFilters() {
+  return Boolean(
+    state.searchQuery.trim() ||
+      state.moodFilters.size ||
+      state.tagFilters.size,
+  );
+}
+
+function toggleSetValue(set, value) {
+  if (set.has(value)) set.delete(value);
+  else set.add(value);
+}
+
+function availableTags() {
+  return uniqueList([
+    ...TAGS,
+    ...state.entries.flatMap((entry) => entry.tags ?? []),
+  ]);
+}
+
+function filteredEntries() {
+  const query = state.searchQuery.trim().toLowerCase();
+  return sortedEntries().filter((entry) => {
+    const matchesSearch =
+      !query ||
+      [
+        entry.title,
+        entry.content,
+        entry.mood,
+        entry.mood_category,
+        ...(entry.tags ?? []),
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    const matchesMood =
+      !state.moodFilters.size ||
+      [...state.moodFilters].some((mood) => entry.mood?.includes(mood));
+    const matchesTag =
+      !state.tagFilters.size ||
+      [...state.tagFilters].some((tag) => (entry.tags ?? []).includes(tag));
+    return matchesSearch && matchesMood && matchesTag;
+  });
+}
+
 function sortedEntries() {
   return [...state.entries].sort((a, b) =>
     `${b.entry_date} ${b.entry_time}`.localeCompare(
@@ -707,6 +944,30 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function formatTodayHeader() {
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+  })
+    .format(new Date())
+    .replace(/\//g, " / ");
+}
+
+function formatDayNumber(value) {
+  return new Intl.DateTimeFormat("zh-CN", {
+    day: "2-digit",
+  }).format(new Date(`${value}T00:00:00`));
+}
+
+function formatDayMeta(value) {
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "short",
+    weekday: "short",
+  }).format(new Date(`${value}T00:00:00`));
+}
+
 function formatDay(value) {
   return new Intl.DateTimeFormat("zh-CN", {
     year: "numeric",
@@ -723,6 +984,19 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function moodStyle(mood = "") {
+  if (mood.includes("开心") || mood.includes("期待")) {
+    return { className: "mood-happy", face: "😊" };
+  }
+  if (mood.includes("低") || mood.includes("难过") || mood.includes("焦虑")) {
+    return { className: "mood-low", face: "😞" };
+  }
+  if (mood.includes("疲")) {
+    return { className: "mood-tired", face: "😐" };
+  }
+  return { className: "mood-calm", face: "🙂" };
 }
 
 function escapeHtml(value) {
