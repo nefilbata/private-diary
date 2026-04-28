@@ -1,5 +1,6 @@
 :root {
   color-scheme: light;
+  --font-serif: "Songti SC", "Noto Serif SC", "STSong", "SimSun", serif;
   --bg: oklch(97.3% 0.009 96);
   --paper: oklch(99% 0.006 96);
   --ink: oklch(25% 0.018 105);
@@ -34,8 +35,7 @@ body {
     radial-gradient(circle at 50% -12%, color-mix(in oklch, var(--paper) 96%, transparent), transparent 34rem),
     var(--bg);
   color: var(--ink);
-  font-family:
-    "Songti SC", "Noto Serif SC", "STSong", "SimSun", serif;
+  font-family: var(--font-serif);
   font-weight: 400;
 }
 
@@ -44,6 +44,7 @@ input,
 textarea,
 select {
   font: inherit;
+  font-family: var(--font-serif);
 }
 
 button {
@@ -426,6 +427,22 @@ textarea:focus-visible,
 select:focus-visible {
   outline: none;
   box-shadow: var(--focus);
+}
+
+
+.auth-page,
+.auth-box,
+.editor-sheet,
+.sheet-panel,
+.bottom-nav,
+.filter-panel,
+.entry,
+.comment-form,
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-serif);
 }
 
 input::placeholder,
