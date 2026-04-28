@@ -1132,12 +1132,83 @@ textarea::placeholder {
   }
 
   .editor-sheet {
-    padding: 8px;
+    align-items: end;
+    padding: 10px;
+    background: rgba(30, 31, 28, 0.1);
+    backdrop-filter: blur(6px);
   }
 
   .sheet-panel {
-    max-height: 92vh;
-    padding: 16px;
+    width: 100%;
+    max-height: min(78vh, 620px);
+    padding: 12px;
     border-radius: 12px;
   }
+
+  .sheet-head {
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .sheet-head h3 {
+    font-size: 16px;
+    font-weight: 500;
+  }
+
+  .sheet-head .icon-btn {
+    width: 30px;
+    height: 30px;
+    font-size: 20px;
+  }
+
+  .form {
+    gap: 9px;
+  }
+
+  .field {
+    gap: 5px;
+  }
+
+  .field span {
+    font-size: 11px;
+  }
+
+  input,
+  textarea,
+  select {
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+  textarea {
+    min-height: 112px;
+    line-height: 1.65;
+  }
+
+  .mood-row,
+  .tag-row {
+    gap: 6px;
+  }
+
+  .chip {
+    min-height: 30px;
+    padding: 4px 9px;
+    border-radius: 8px;
+    font-size: 12px;
+  }
+
+  .toolbar {
+    gap: 7px;
+  }
+
+  .toolbar .primary,
+  .toolbar .ghost {
+    min-height: 34px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+  }
+
+
 }
