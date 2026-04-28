@@ -779,26 +779,42 @@ textarea::placeholder {
 }
 
 @media (max-width: 560px) {
+  :root {
+    --bg: oklch(98.6% 0.004 96);
+    --paper: oklch(99.2% 0.003 96);
+    --ink: oklch(21% 0.008 100);
+    --text: oklch(38% 0.009 100);
+    --muted: oklch(58% 0.008 100);
+    --line: oklch(91% 0.006 100);
+    --line-strong: oklch(84% 0.007 100);
+    --green: oklch(46% 0.045 132);
+    --green-strong: oklch(37% 0.045 132);
+    --green-soft: oklch(94% 0.014 132);
+  }
+
   body {
-    background: oklch(97.8% 0.007 96);
+    background: var(--bg);
   }
 
   .shell {
     width: 100%;
-    padding: 16px 18px 112px;
+    padding: 18px 22px 116px;
   }
 
   .app-header {
-    align-items: start;
+    position: static;
     display: grid;
-    gap: 14px;
-    padding: 10px 0 14px;
-    background: color-mix(in oklch, var(--bg) 90%, transparent);
+    gap: 12px;
+    padding: 8px 0 18px;
+    background: transparent;
+    backdrop-filter: none;
   }
 
   .date-line {
-    font-size: 14px;
-    letter-spacing: 0.01em;
+    margin: 0;
+    color: oklch(48% 0.008 100);
+    font-size: 15px;
+    font-weight: 360;
   }
 
   h1 {
@@ -807,35 +823,53 @@ textarea::placeholder {
 
   .header-actions {
     width: 100%;
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr)) 40px;
-    gap: 7px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
     overflow: visible;
   }
 
+  .filter-btn,
+  .search-btn {
+    flex: 0 0 auto;
+  }
+
   .filter-btn {
-    min-height: 38px;
-    min-width: 0;
-    padding: 7px 10px;
-    border-radius: 12px;
-    font-size: 14px;
-    background: color-mix(in oklch, var(--paper) 74%, transparent);
+    min-height: 32px;
+    padding: 5px 9px;
+    border: 0;
+    border-radius: 6px;
+    color: var(--muted);
+    background: transparent;
+    font-size: 13px;
   }
 
   .filter-btn.active {
-    color: var(--green-strong);
-    background: color-mix(in oklch, var(--green-soft) 78%, var(--paper));
-    border-color: color-mix(in oklch, var(--green) 16%, transparent);
+    color: var(--ink);
+    background: oklch(94.5% 0.005 100);
+  }
+
+  .filter-btn:hover,
+  .filter-btn:focus-visible {
+    background: oklch(94.5% 0.005 100);
   }
 
   .search-btn {
     order: 5;
-    width: 38px;
-    height: 38px;
-    min-height: 38px;
-    font-size: 22px;
-    border: 1px solid var(--line);
-    background: color-mix(in oklch, var(--paper) 74%, transparent);
+    width: 32px;
+    height: 32px;
+    min-height: 32px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font-size: 20px;
+  }
+
+  .search-btn:hover,
+  .search-btn:focus-visible {
+    background: oklch(94.5% 0.005 100);
   }
 
   .export-top-btn {
@@ -844,22 +878,25 @@ textarea::placeholder {
 
   .signout-btn {
     order: 4;
-    grid-column: auto;
     margin-left: 0;
   }
 
   .filter-panel {
-    margin-top: 0;
-    padding: 12px;
-    border-radius: 12px;
+    margin: -2px 0 16px;
+    padding: 10px 0 12px;
+    border: 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
   }
 
   .main {
-    padding-top: 4px;
+    padding-top: 0;
   }
 
   .timeline-list {
-    gap: 18px;
+    gap: 0;
   }
 
   .timeline-list::before,
@@ -868,99 +905,137 @@ textarea::placeholder {
   }
 
   .timeline-item {
+    display: grid;
     grid-template-columns: 1fr;
-    gap: 8px;
+    gap: 0;
+    padding: 15px 0 18px;
+    border-top: 1px solid var(--line);
+  }
+
+  .timeline-item:first-child {
+    border-top: 0;
   }
 
   .date-block {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     gap: 7px;
-    padding: 0 2px;
+    padding: 0 0 7px;
     text-align: left;
   }
 
   .date-block strong {
-    font-size: 18px;
+    color: var(--muted);
+    font-size: 12px;
     font-weight: 420;
+    line-height: 1.2;
   }
 
   .date-block span {
     display: inline;
     margin: 0;
+    color: oklch(66% 0.007 100);
     font-size: 12px;
+    line-height: 1.2;
   }
 
   .entry {
-    padding: 14px;
-    border-radius: 14px;
-    background: color-mix(in oklch, var(--paper) 82%, transparent);
-    box-shadow: 0 10px 28px rgba(67, 69, 61, 0.045);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .entry:hover {
+    border-color: transparent;
+    background: transparent;
   }
 
   .entry-head {
     display: grid;
-    gap: 10px;
+    gap: 7px;
   }
 
   .mood-line {
     gap: 7px;
+    color: var(--muted);
     font-size: 12px;
   }
 
   .mood-face {
-    width: 22px;
-    height: 22px;
-    font-size: 12px;
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
   }
 
   .entry h3 {
-    margin-top: 8px;
-    font-size: 20px;
-    line-height: 1.3;
-  }
-
-  .entry p {
-    margin-top: 14px;
-    font-size: 15px;
-    line-height: 1.75;
+    margin: 7px 0 0;
+    color: var(--ink);
+    font-size: 26px;
+    font-weight: 520;
+    line-height: 1.18;
   }
 
   .entry-tools {
     justify-content: flex-start;
-    gap: 12px;
+    gap: 13px;
+    color: var(--muted);
     font-size: 12px;
   }
 
   .plain-btn {
-    min-height: 28px;
-    padding: 3px 0;
+    min-height: 24px;
+    padding: 2px 0;
+    color: var(--muted);
+    font-size: 12px;
+  }
+
+  .plain-btn:hover,
+  .plain-btn:focus-visible {
+    color: var(--ink);
+  }
+
+  .entry p {
+    margin: 15px 0 0;
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.82;
   }
 
   .tag-line {
     margin-top: 14px;
-    gap: 10px;
+    gap: 8px;
+  }
+
+  .tag-line input {
+    width: 15px;
+    height: 15px;
+  }
+
+  .tag-line:has(input:only-child) {
+    display: none;
   }
 
   .comments {
     gap: 8px;
-    margin-top: 12px;
-    padding-top: 10px;
+    margin-top: 16px;
+    padding-top: 11px;
+    border-top: 1px solid var(--line);
   }
 
   .legend {
-    font-size: 11px;
+    color: oklch(64% 0.007 100);
+    font-size: 12px;
   }
 
   .comment {
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 8px;
-    padding: 8px 0;
-    border-bottom: 1px solid color-mix(in oklch, var(--line) 62%, transparent);
-  }
-
-  .comment:last-of-type {
-    border-bottom: 0;
+    padding: 5px 0;
+    color: var(--text);
+    font-size: 13px;
+    border: 0;
   }
 
   .comment-delete {
@@ -968,28 +1043,48 @@ textarea::placeholder {
     margin-top: -2px;
   }
 
+  .small {
+    color: oklch(68% 0.006 100);
+    font-size: 11px;
+  }
+
   .comment-form {
-    grid-template-columns: minmax(0, 1fr) 42px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 8px;
     margin-top: 2px;
   }
 
   .comment-form input {
-    min-height: 42px;
-    padding: 10px 13px;
-    border-radius: 14px;
+    min-height: 34px;
+    padding: 7px 0;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
     font-size: 14px;
   }
 
+  .comment-form input:focus {
+    border-color: var(--line-strong);
+    box-shadow: none;
+  }
+
   .comment-form .ghost {
-    width: 42px;
     min-width: 42px;
-    min-height: 42px;
-    padding: 0;
-    border-radius: 14px;
-    font-size: 20px;
-    line-height: 1;
+    min-height: 30px;
+    padding: 4px 8px;
+    border: 0;
+    border-radius: 6px;
+    background: oklch(94.5% 0.005 100);
+    color: var(--text);
+    font-size: 13px;
+  }
+
+  .comment-form .ghost:hover,
+  .comment-form .ghost:focus-visible {
+    background: oklch(91.5% 0.006 100);
   }
 
   .split {
@@ -997,14 +1092,30 @@ textarea::placeholder {
   }
 
   .bottom-nav {
+    width: 100%;
+    gap: 12px;
     padding: 8px 30px max(14px, env(safe-area-inset-bottom));
+    background: color-mix(in oklch, var(--paper) 94%, transparent);
+    border-top: 1px solid var(--line);
+  }
+
+  .bottom-nav button {
+    min-height: 44px;
+    color: var(--muted);
+    font-size: 21px;
+  }
+
+  .bottom-nav button span {
+    font-size: 11px;
   }
 
   .bottom-nav .fab,
   .floating-new {
-    width: 56px;
-    height: 56px;
-    font-size: 31px;
+    width: 52px;
+    height: 52px;
+    background: oklch(36% 0.012 100);
+    color: var(--paper);
+    font-size: 29px;
   }
 
   .editor-sheet {
@@ -1014,6 +1125,6 @@ textarea::placeholder {
   .sheet-panel {
     max-height: 92vh;
     padding: 16px;
-    border-radius: 18px 18px 12px 12px;
+    border-radius: 12px;
   }
 }

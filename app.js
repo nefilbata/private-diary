@@ -400,7 +400,7 @@ function renderComments(entry) {
         .join("")}
       <form class="comment-form" data-comment-form="${entry.id}">
         <input name="comment" placeholder="补充一句后续想法" required />
-        <button class="ghost" title="添加评论">＋</button>
+        <button class="ghost" title="添加评论">发送</button>
       </form>
     </div>
   `;
