@@ -371,9 +371,17 @@ h1 {
 }
 
 .comment {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 10px;
   color: var(--text);
   font-size: 13px;
   line-height: 1.7;
+}
+
+.comment-delete {
+  margin-top: -3px;
 }
 
 .small {
@@ -787,20 +795,18 @@ textarea::placeholder {
 
   .header-actions {
     width: 100%;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     gap: 6px;
-    overflow-x: auto;
-    padding-bottom: 2px;
-    scrollbar-width: none;
-  }
-
-  .header-actions::-webkit-scrollbar {
-    display: none;
+    overflow: visible;
   }
 
   .filter-btn,
   .search-btn {
     flex: 0 0 auto;
+  }
+
+  .signout-btn {
+    margin-left: 0;
   }
 
   .timeline-list::before {
@@ -832,6 +838,16 @@ textarea::placeholder {
   .split,
   .comment-form {
     grid-template-columns: 1fr;
+  }
+
+  .comment {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .comment-delete {
+    justify-self: start;
+    margin-top: 0;
   }
 
   .editor-sheet {

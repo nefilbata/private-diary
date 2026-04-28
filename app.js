@@ -389,7 +389,13 @@ function renderComments(entry) {
       ${comments
         .map(
           (comment) =>
-            `<div class="comment">${escapeHtml(comment.content)}<div class="small">${formatDateTime(comment.created_at)}</div></div>`,
+            `<div class="comment">
+              <div>
+                <div>${escapeHtml(comment.content)}</div>
+                <div class="small">${formatDateTime(comment.created_at)}</div>
+              </div>
+              <button class="plain-btn comment-delete" type="button" data-delete-comment="${comment.id}" data-comment-entry="${entry.id}" title="删除评论">删除</button>
+            </div>`,
         )
         .join("")}
       <form class="comment-form" data-comment-form="${entry.id}">
@@ -549,6 +555,11 @@ function bindAppEvents() {
   document.querySelectorAll("[data-delete]").forEach((button) => {
     button.addEventListener("click", () => deleteEntry(button.dataset.delete));
   });
+  document.querySelectorAll("[data-delete-comment]").forEach((button) => {
+    button.addEventListener("click", () =>
+      deleteComment(button.dataset.commentEntry, button.dataset.deleteComment),
+    );
+  });
   document.querySelectorAll("[data-select]").forEach((input) => {
     input.addEventListener("change", () => {
       if (input.checked) state.selectedExportIds.add(input.dataset.select);
@@ -689,6 +700,28 @@ async function deleteEntry(id) {
     await saveEntriesLocal();
   }
   state.selectedExportIds.delete(id);
+  render();
+}
+
+async function deleteComment(entryId, commentId) {
+  if (!confirm("确定删除这条评论吗？")) return;
+  if (state.client) {
+    const { error } = await state.client
+      .from("comments")
+      .delete()
+      .eq("id", commentId)
+      .eq("entry_id", entryId);
+    if (error) return alert(error.message);
+    await loadEntries();
+  } else {
+    const entry = state.entries.find((item) => item.id === entryId);
+    if (entry) {
+      entry.comments = (entry.comments ?? []).filter(
+        (comment) => comment.id !== commentId,
+      );
+      await saveEntriesLocal();
+    }
+  }
   render();
 }
 
