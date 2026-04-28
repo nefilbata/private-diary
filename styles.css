@@ -384,6 +384,16 @@ h1 {
   margin-top: -3px;
 }
 
+.comment-image {
+  display: block;
+  width: min(180px, 100%);
+  max-height: 160px;
+  margin-top: 7px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+}
+
 .small {
   margin-top: 3px;
   color: var(--muted);
@@ -392,8 +402,31 @@ h1 {
 
 .comment-form {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: 8px;
+}
+
+.image-picker {
+  display: grid;
+  place-items: center;
+  min-width: 42px;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.image-picker:hover {
+  border-color: var(--line-strong);
+  background: var(--surface-clear);
+}
+
+.image-picker input {
+  display: none;
 }
 
 input,
@@ -1080,7 +1113,7 @@ textarea::placeholder {
 
   .comment-form {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     align-items: center;
     gap: 8px;
     margin-top: 2px;
@@ -1101,6 +1134,16 @@ textarea::placeholder {
     box-shadow: none;
   }
 
+  .comment-form .image-picker {
+    min-width: 30px;
+    min-height: 30px;
+    padding: 4px 7px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    font-size: 12px;
+  }
+
   .comment-form .ghost {
     min-width: 42px;
     min-height: 30px;
@@ -1115,6 +1158,12 @@ textarea::placeholder {
   .comment-form .ghost:hover,
   .comment-form .ghost:focus-visible {
     background: oklch(91.5% 0.006 100);
+  }
+
+  .comment-image {
+    width: min(150px, 100%);
+    max-height: 130px;
+    border-radius: 8px;
   }
 
   .split {

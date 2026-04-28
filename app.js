@@ -391,7 +391,8 @@ function renderComments(entry) {
           (comment) =>
             `<div class="comment">
               <div>
-                <div>${escapeHtml(comment.content)}</div>
+                ${comment.content ? `<div>${escapeHtml(comment.content)}</div>` : ""}
+                ${comment.image_url ? `<img class="comment-image" src="${comment.image_url}" alt="评论图片" />` : ""}
                 <div class="small">${formatDateTime(comment.created_at)}</div>
               </div>
               <button class="plain-btn comment-delete" type="button" data-delete-comment="${comment.id}" data-comment-entry="${entry.id}" title="删除评论">删除</button>
@@ -399,7 +400,11 @@ function renderComments(entry) {
         )
         .join("")}
       <form class="comment-form" data-comment-form="${entry.id}">
-        <input name="comment" placeholder="补充一句后续想法" required />
+        <input name="comment" placeholder="补充一句后续想法" />
+        <label class="image-picker" title="添加图片">
+          <input name="image" type="file" accept="image/*" />
+          图
+        </label>
         <button class="ghost" title="添加评论">发送</button>
       </form>
     </div>
@@ -665,11 +670,14 @@ async function submitComment(event) {
   event.preventDefault();
   const form = event.target;
   const entryId = form.dataset.commentForm;
-  const content = new FormData(form).get("comment").trim();
-  if (!content) return;
+  const formData = new FormData(form);
+  const content = formData.get("comment").trim();
+  const imageFile = form.image.files[0];
+  const image_url = imageFile ? await fileToDataUrl(imageFile) : "";
+  if (!content && !image_url) return;
 
   if (state.client) {
-    const encryptedContent = await encryptPrivateData({ content });
+    const encryptedContent = await encryptPrivateData({ content, image_url });
     const { error } = await state.client
       .from("comments")
       .insert({ entry_id: entryId, content: encryptedContent });
@@ -682,6 +690,7 @@ async function submitComment(event) {
       id: crypto.randomUUID(),
       entry_id: entryId,
       content,
+      image_url,
       created_at: new Date().toISOString(),
     });
     await saveEntriesLocal();
@@ -783,6 +792,7 @@ async function decryptEntry(entry) {
       return {
         ...comment,
         content: decrypted?.content ?? comment.content,
+        image_url: decrypted?.image_url ?? comment.image_url ?? "",
       };
     }),
   );
