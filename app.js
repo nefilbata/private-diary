@@ -24,9 +24,11 @@ const state = {
   authMode: "signin",
   cryptoKey: null,
   searchOpen: false,
+  dateFilterOpen: false,
   moodFilterOpen: false,
   tagFilterOpen: false,
   searchQuery: "",
+  dateFilter: "",
   moodFilters: new Set(),
   tagFilters: new Set(),
 };
@@ -108,6 +110,7 @@ async function render() {
         </div>
         <div class="header-actions">
           <button class="filter-btn ${hasActiveFilters() ? "" : "active"}" type="button" data-action="clearFilters">全部</button>
+          <button class="filter-btn ${state.dateFilterOpen || state.dateFilter ? "active" : ""}" type="button" data-action="toggleDateFilter">日期</button>
           <button class="filter-btn ${state.tagFilterOpen || state.tagFilters.size ? "active" : ""}" type="button" data-action="toggleTagFilter">分类</button>
           <button class="filter-btn ${state.moodFilterOpen || state.moodFilters.size ? "active" : ""}" type="button" data-action="toggleMoodFilter">情绪</button>
           <button class="filter-btn export-top-btn" type="button" data-action="showExport">导出</button>
@@ -197,7 +200,7 @@ function renderAuth() {
 }
 
 function renderFilterPanel() {
-  if (!state.searchOpen && !state.moodFilterOpen && !state.tagFilterOpen) {
+  if (!state.searchOpen && !state.dateFilterOpen && !state.moodFilterOpen && !state.tagFilterOpen) {
     return "";
   }
 
@@ -208,6 +211,14 @@ function renderFilterPanel() {
           ? `<label class="search-field">
               <span>搜索</span>
               <input id="searchInput" value="${escapeHtml(state.searchQuery)}" placeholder="搜索标题、内容、标签或情绪" />
+            </label>`
+          : ""
+      }
+      ${
+        state.dateFilterOpen
+          ? `<label class="search-field">
+              <span>日历史</span>
+              <input id="dateFilterInput" type="date" value="${escapeHtml(state.dateFilter)}" />
             </label>`
           : ""
       }
@@ -466,9 +477,11 @@ function bindAppEvents() {
       if (action === "signout") return signOut();
       if (action === "clearFilters") {
         state.searchQuery = "";
+        state.dateFilter = "";
         state.moodFilters.clear();
         state.tagFilters.clear();
         state.searchOpen = false;
+        state.dateFilterOpen = false;
         state.moodFilterOpen = false;
         state.tagFilterOpen = false;
         state.view = "timeline";
@@ -476,6 +489,11 @@ function bindAppEvents() {
       }
       if (action === "toggleSearch") {
         state.searchOpen = !state.searchOpen;
+        state.view = "timeline";
+        render();
+      }
+      if (action === "toggleDateFilter") {
+        state.dateFilterOpen = !state.dateFilterOpen;
         state.view = "timeline";
         render();
       }
@@ -543,10 +561,16 @@ function bindAppEvents() {
     state.searchQuery = event.target.value;
     render();
   });
-  const searchInput = document.querySelector("#searchInput");
-  if (searchInput) {
-    searchInput.focus();
-    searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+  document.querySelector("#dateFilterInput")?.addEventListener("change", (event) => {
+    state.dateFilter = event.target.value;
+    render();
+  });
+  const activeInput = document.querySelector("#searchInput") ?? document.querySelector("#dateFilterInput");
+  if (activeInput) {
+    activeInput.focus();
+    if (activeInput.id === "searchInput") {
+      activeInput.setSelectionRange(activeInput.value.length, activeInput.value.length);
+    }
   }
 
   document.querySelector("#entryForm")?.addEventListener("submit", submitEntry);
@@ -885,6 +909,7 @@ function uniqueList(items) {
 function hasActiveFilters() {
   return Boolean(
     state.searchQuery.trim() ||
+      state.dateFilter ||
       state.moodFilters.size ||
       state.tagFilters.size,
   );
@@ -905,6 +930,7 @@ function availableTags() {
 function filteredEntries() {
   const query = state.searchQuery.trim().toLowerCase();
   return sortedEntries().filter((entry) => {
+    const matchesDate = !state.dateFilter || entry.entry_date === state.dateFilter;
     const matchesSearch =
       !query ||
       [
@@ -913,6 +939,7 @@ function filteredEntries() {
         entry.mood,
         entry.mood_category,
         ...(entry.tags ?? []),
+        ...(entry.comments ?? []).map((comment) => comment.content ?? ""),
       ]
         .join(" ")
         .toLowerCase()
@@ -923,7 +950,7 @@ function filteredEntries() {
     const matchesTag =
       !state.tagFilters.size ||
       [...state.tagFilters].some((tag) => (entry.tags ?? []).includes(tag));
-    return matchesSearch && matchesMood && matchesTag;
+    return matchesDate && matchesSearch && matchesMood && matchesTag;
   });
 }
 
