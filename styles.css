@@ -896,51 +896,65 @@ textarea::placeholder {
   }
 
   .timeline-list {
+    position: relative;
     gap: 0;
   }
 
-  .timeline-list::before,
-  .timeline-line {
-    display: none;
+  .timeline-list::before {
+    display: block;
+    left: 58px;
+    top: 20px;
+    bottom: 20px;
+    width: 1px;
+    background: oklch(88% 0.006 100);
   }
 
   .timeline-item {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
-    padding: 15px 0 18px;
-    border-top: 1px solid var(--line);
-  }
-
-  .timeline-item:first-child {
+    grid-template-columns: 42px 20px minmax(0, 1fr);
+    gap: 10px;
+    padding: 14px 0 20px;
     border-top: 0;
   }
 
-  .date-block {
+  .timeline-line {
+    position: relative;
     display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 0 0 7px;
-    text-align: left;
+    justify-content: center;
+    min-height: 100%;
+    padding-top: 12px;
+  }
+
+  .node {
+    width: 7px;
+    height: 7px;
+    box-shadow: 0 0 0 6px var(--bg);
+  }
+
+  .date-block {
+    display: block;
+    padding: 2px 0 0;
+    text-align: center;
   }
 
   .date-block strong {
-    color: var(--muted);
-    font-size: 12px;
-    font-weight: 420;
-    line-height: 1.2;
+    display: block;
+    color: var(--ink);
+    font-size: 25px;
+    font-weight: 360;
+    line-height: 1;
   }
 
   .date-block span {
-    display: inline;
-    margin: 0;
+    display: block;
+    margin-top: 6px;
     color: oklch(66% 0.007 100);
     font-size: 12px;
-    line-height: 1.2;
+    line-height: 1.45;
   }
 
   .entry {
-    padding: 0;
+    padding: 1px 0 0;
     border: 0;
     border-radius: 0;
     background: transparent;
@@ -972,9 +986,9 @@ textarea::placeholder {
   .entry h3 {
     margin: 7px 0 0;
     color: var(--ink);
-    font-size: 26px;
+    font-size: 23px;
     font-weight: 520;
-    line-height: 1.18;
+    line-height: 1.22;
   }
 
   .entry-tools {
