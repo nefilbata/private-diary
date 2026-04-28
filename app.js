@@ -123,11 +123,14 @@ async function render() {
         ${
           state.view === "export"
             ? renderExport()
-            : renderTimeline()
+            : state.view === "stats"
+              ? renderStats()
+              : renderTimeline()
         }
       </section>
       <nav class="bottom-nav">
         <button class="${state.view === "timeline" ? "active" : ""}" data-view="timeline" title="首页" aria-label="首页">⌂<span>首页</span></button>
+        <button class="${state.view === "stats" ? "active" : ""}" data-view="stats" title="统计" aria-label="统计">◌<span>统计</span></button>
         <button class="fab" data-action="new" title="写日记" aria-label="写日记">＋</button>
         <button class="${state.view === "export" ? "active" : ""}" data-view="export" title="导出" aria-label="导出">⇩<span>导出</span></button>
       </nav>
@@ -460,6 +463,78 @@ function renderExport() {
         ${selected.length ? selected.map((entry) => `<span class="chip active">${escapeHtml(entry.title || entry.entry_date)}</span>`).join("") : `<span class="chip">当前没有选中记录</span>`}
       </div>
     </section>
+  `;
+}
+
+function renderStats() {
+  const stats = buildStats();
+  if (!stats.total) {
+    return `
+      <section class="empty">
+        <h2>还没有可统计的日记</h2>
+        <p>写下几条记录后，这里会整理记录频率、情绪和标签趋势。</p>
+        <button class="primary" data-action="new">写第一条</button>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="stats-view">
+      <div class="stats-head">
+        <h3>日记统计</h3>
+        <p>${escapeHtml(stats.insight)}</p>
+      </div>
+      <div class="stats-grid">
+        ${statCard("记录", stats.total)}
+        ${statCard("天数", stats.days)}
+        ${statCard("连续", `${stats.streak}天`)}
+        ${statCard("字数", stats.characters)}
+      </div>
+      <div class="stats-section">
+        <div class="stats-title">最近 7 天</div>
+        <div class="week-bars">
+          ${stats.week.map((day) => `
+            <div class="week-bar">
+              <span style="height:${day.height}%"></span>
+              <em>${day.label}</em>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+      <div class="stats-section">
+        <div class="stats-title">情绪分布</div>
+        ${stats.moods.length ? renderRankList(stats.moods, stats.total) : `<p class="hint">还没有情绪数据。</p>`}
+      </div>
+      <div class="stats-section">
+        <div class="stats-title">常用标签</div>
+        <div class="stats-tags">
+          ${stats.tags.length ? stats.tags.map((item) => `<span>#${escapeHtml(item.name)} ${item.count}</span>`).join("") : `<span>暂无标签</span>`}
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function statCard(label, value) {
+  return `
+    <div class="stat-card">
+      <span>${label}</span>
+      <strong>${value}</strong>
+    </div>
+  `;
+}
+
+function renderRankList(items, total) {
+  return `
+    <div class="rank-list">
+      ${items.map((item) => `
+        <div class="rank-item">
+          <span>${escapeHtml(item.name)}</span>
+          <div><i style="width:${Math.min(100, Math.max(8, Math.round((item.count / total) * 100)))}%"></i></div>
+          <em>${item.count}</em>
+        </div>
+      `).join("")}
+    </div>
   `;
 }
 
@@ -952,6 +1027,74 @@ function filteredEntries() {
       [...state.tagFilters].some((tag) => (entry.tags ?? []).includes(tag));
     return matchesDate && matchesSearch && matchesMood && matchesTag;
   });
+}
+
+function buildStats() {
+  const entries = sortedEntries();
+  const total = entries.length;
+  const days = new Set(entries.map((entry) => entry.entry_date)).size;
+  const characters = entries.reduce(
+    (sum, entry) => sum + String(entry.content ?? "").replace(/\s/g, "").length,
+    0,
+  );
+  const moods = topCounts(entries.flatMap((entry) => splitList(entry.mood)), 5);
+  const tags = topCounts(entries.flatMap((entry) => entry.tags ?? []), 8);
+  const streak = currentStreak(entries.map((entry) => entry.entry_date));
+  const week = lastSevenDays(entries);
+  const topMood = moods[0]?.name ?? "还不明显";
+  const topTag = tags[0]?.name ? `，最近常写 #${tags[0].name}` : "";
+  const insight = `共 ${total} 条，覆盖 ${days} 天。最常见的情绪是「${topMood}」${topTag}。`;
+  return { total, days, characters, moods, tags, streak, week, insight };
+}
+
+function topCounts(items, limit) {
+  const counts = new Map();
+  items.filter(Boolean).forEach((item) => {
+    counts.set(item, (counts.get(item) ?? 0) + 1);
+  });
+  return [...counts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+    .slice(0, limit);
+}
+
+function currentStreak(dates) {
+  const dateSet = new Set(dates);
+  if (!dateSet.size) return 0;
+  let cursor = new Date(`${today()}T00:00:00`);
+  if (!dateSet.has(today())) {
+    cursor = new Date(`${[...dateSet].sort().at(-1)}T00:00:00`);
+  }
+  let streak = 0;
+  while (dateSet.has(cursor.toISOString().slice(0, 10))) {
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+function lastSevenDays(entries) {
+  const counts = new Map();
+  entries.forEach((entry) => {
+    counts.set(entry.entry_date, (counts.get(entry.entry_date) ?? 0) + 1);
+  });
+  const days = [];
+  const cursor = new Date(`${today()}T00:00:00`);
+  for (let index = 6; index >= 0; index -= 1) {
+    const day = new Date(cursor);
+    day.setDate(cursor.getDate() - index);
+    const value = day.toISOString().slice(0, 10);
+    days.push({
+      value,
+      label: new Intl.DateTimeFormat("zh-CN", { weekday: "short" }).format(day),
+      count: counts.get(value) ?? 0,
+    });
+  }
+  const max = Math.max(1, ...days.map((day) => day.count));
+  return days.map((day) => ({
+    ...day,
+    height: day.count ? Math.max(18, Math.round((day.count / max) * 100)) : 4,
+  }));
 }
 
 function sortedEntries() {
