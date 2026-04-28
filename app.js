@@ -129,10 +129,10 @@ async function render() {
         }
       </section>
       <nav class="bottom-nav">
-        <button class="${state.view === "timeline" ? "active" : ""}" data-view="timeline" title="首页" aria-label="首页">⌂<span>首页</span></button>
-        <button class="${state.view === "stats" ? "active" : ""}" data-view="stats" title="统计" aria-label="统计">◌<span>统计</span></button>
-        <button class="fab" data-action="new" title="写日记" aria-label="写日记">＋</button>
-        <button class="${state.view === "export" ? "active" : ""}" data-view="export" title="导出" aria-label="导出">⇩<span>导出</span></button>
+        <button class="${state.view === "timeline" ? "active" : ""}" data-view="timeline" title="首页" aria-label="首页">${icon("home")}<span>首页</span></button>
+        <button class="${state.view === "stats" ? "active" : ""}" data-view="stats" title="统计" aria-label="统计">${icon("stats")}<span>统计</span></button>
+        <button class="write-tab" data-action="new" title="写日记" aria-label="写日记">${icon("edit")}<span>写</span></button>
+        <button class="${state.view === "export" ? "active" : ""}" data-view="export" title="导出" aria-label="导出">${icon("export")}<span>导出</span></button>
       </nav>
       <button class="floating-new" data-action="new" title="写日记" aria-label="写日记">＋</button>
       ${state.editorOpen ? renderEditor() : ""}
@@ -513,6 +513,16 @@ function renderStats() {
       </div>
     </section>
   `;
+}
+
+function icon(name) {
+  const paths = {
+    home: '<path d="M3 10.5 12 3l9 7.5"></path><path d="M5.5 9.5V21h13V9.5"></path><path d="M9.5 21v-6h5v6"></path>',
+    stats: '<path d="M4 19V5"></path><path d="M4 19h16"></path><path d="M8 16v-5"></path><path d="M12 16V8"></path><path d="M16 16v-9"></path>',
+    edit: '<path d="M5 19h14"></path><path d="M7 15.5 15.8 6.7a2.1 2.1 0 0 1 3 3L10 18l-4 1 1-3.5Z"></path>',
+    export: '<path d="M12 3v12"></path><path d="m7.5 10.5 4.5 4.5 4.5-4.5"></path><path d="M5 20h14"></path>',
+  };
+  return `<svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true">${paths[name]}</svg>`;
 }
 
 function statCard(label, value) {
